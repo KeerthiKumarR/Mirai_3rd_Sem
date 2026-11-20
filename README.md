@@ -3,7 +3,6 @@
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/)
 [![Vector DB: ChromaDB](https://img.shields.io/badge/VectorDB-ChromaDB-orange.svg)](https://www.trychroma.com/)
 [![LLM: Groq](https://img.shields.io/badge/LLM-Groq-purple.svg)](https://groq.com/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
 An enterprise-grade, strictly-grounded Retrieval-Augmented Generation (RAG) system developed for commercial kitchen operations, standardized recipes, allergen matrices, and food safety compliance auditing, referencing the **Le Grand Bistro Culinary Operations, Standardized Recipes & Allergen Manual (50 Pages)**.
 
