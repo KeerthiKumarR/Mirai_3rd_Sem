@@ -259,6 +259,14 @@ Sesame: Charred Eggplant & Tahini Veloute.
    # Add your GROQ_API_KEY into .env
    ```
 
+### Running the Web UI
+
+Launch the interactive Streamlit user interface to ask custom culinary questions and inspect retrieved vector passages:
+```bash
+streamlit run app.py
+```
+Open your browser at `http://localhost:8501`.
+
 ### Running the Assessment
 
 Execute the main program to run all 5 assessment questions:
