@@ -10,14 +10,14 @@ Your task is to answer the user's question based EXCLUSIVELY on the provided ret
 STRICT GROUNDING RULES:
 1. Generate answers based ONLY on the provided context excerpts. Do not use external knowledge, unstated assumptions, or general world knowledge.
 2. If the answer is not explicitly and directly available in the provided context, you MUST return EXACTLY: [not found]
-3. Be precise with all numerical values, units (grams, milliliters, degrees Celsius, minutes), and exact dish names.
+3. Be concise and precise with all numerical values, units, and dish names. Preserve the exact units as written in the text (e.g., write 'grams' instead of 'g', 'degrees Celsius' instead of '°C', 'minutes' instead of 'min').
 """
 
 class AnswerGenerator:
     def __init__(self):
         self.gemini_key = GEMINI_API_KEY
         self.openai_key = OPENAI_API_KEY
-        self.groq_key = GROQ_API_KEY
+        self.groq_key = GROQ_API_KEY or os.getenv("GROQ_API_KEY", "")
 
     def generate(self, question: str, retrieval_result: dict) -> dict:
         """
@@ -37,7 +37,14 @@ class AnswerGenerator:
         llm_answer = self._try_llm_generation(question, context)
         if llm_answer is not None:
             cleaned = llm_answer.strip()
-            if NOT_FOUND_STRING in cleaned or cleaned.lower() == "not found" or "[not found]" in cleaned:
+            # If model returned not found or variations
+            if (
+                NOT_FOUND_STRING in cleaned
+                or cleaned.lower() == "not found"
+                or cleaned.lower() == "[not found]"
+                or "not available in the provided context" in cleaned.lower()
+                or "not mentioned in the provided context" in cleaned.lower()
+            ):
                 return {"answer": NOT_FOUND_STRING, "sources": []}
             return {
                 "answer": cleaned,
@@ -58,6 +65,30 @@ class AnswerGenerator:
         """Attempts generation with available LLM services."""
         user_prompt = f"CONTEXT:\n{context}\n\nQUESTION:\n{question}\n\nANSWER:"
         
+        # Try Groq if key is provided
+        groq_api_key = self.groq_key or os.getenv("GROQ_API_KEY", "")
+        if groq_api_key:
+            try:
+                from groq import Groq
+                client = Groq(api_key=groq_api_key)
+                
+                # Try verified working models on this account
+                for model_name in ["openai/gpt-oss-120b", "openai/gpt-oss-20b", "qwen/qwen3.8-27b"]:
+                    try:
+                        completion = client.chat.completions.create(
+                            model=model_name,
+                            messages=[
+                                {"role": "system", "content": STRICT_SYSTEM_PROMPT},
+                                {"role": "user", "content": user_prompt}
+                            ],
+                            temperature=0.0
+                        )
+                        return completion.choices[0].message.content.strip()
+                    except Exception as model_err:
+                        continue
+            except Exception as e:
+                print(f"[Warning] Groq API call failed: {e}. Falling back...")
+
         # Try Google Gemini if key is provided
         if self.gemini_key:
             try:
@@ -71,23 +102,6 @@ class AnswerGenerator:
                     return response.text.strip()
             except Exception as e:
                 print(f"[Warning] Gemini API call failed: {e}. Falling back...")
-
-        # Try Groq if key is provided
-        if self.groq_key:
-            try:
-                from groq import Groq
-                client = Groq(api_key=self.groq_key)
-                completion = client.chat.completions.create(
-                    model="llama-3.3-70b-versatile",
-                    messages=[
-                        {"role": "system", "content": STRICT_SYSTEM_PROMPT},
-                        {"role": "user", "content": user_prompt}
-                    ],
-                    temperature=0.0
-                )
-                return completion.choices[0].message.content.strip()
-            except Exception as e:
-                print(f"[Warning] Groq API call failed: {e}. Falling back...")
 
         # Try OpenAI if key is provided
         if self.openai_key:

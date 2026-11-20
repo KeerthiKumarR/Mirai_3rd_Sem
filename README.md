@@ -2,6 +2,7 @@
 
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/)
 [![Vector DB: ChromaDB](https://img.shields.io/badge/VectorDB-ChromaDB-orange.svg)](https://www.trychroma.com/)
+[![LLM: Groq](https://img.shields.io/badge/LLM-Groq-purple.svg)](https://groq.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
 An enterprise-grade, strictly-grounded Retrieval-Augmented Generation (RAG) system developed for commercial kitchen operations, standardized recipes, allergen matrices, and food safety compliance auditing, referencing the **Le Grand Bistro Culinary Operations, Standardized Recipes & Allergen Manual (50 Pages)**.
@@ -77,7 +78,7 @@ An enterprise-grade, strictly-grounded Retrieval-Augmented Generation (RAG) syst
                                          v                           v
                            [ 6. Strict Grounding ]         Return: {"answer": "[not found]",
                             - Extract precise facts/quantities     "sources": []}
-                            - LLM or Grounded Synthesizer
+                            - Groq LLM / Grounded Synthesizer
                                          |
                                          v
                          Return: {"answer": <text>,
@@ -120,7 +121,7 @@ An enterprise-grade, strictly-grounded Retrieval-Augmented Generation (RAG) syst
     "sources": []
   }
   ```
-- If an LLM API key (`GEMINI_API_KEY`, `OPENAI_API_KEY`, or `GROQ_API_KEY`) is provided in `.env`, the system utilizes the model with a strict system prompt. If no API key is configured or in offline environments, the built-in deterministic grounded synthesizer extracts the grounded facts directly from the retrieved context.
+- **LLM Integration**: Uses Groq (`GROQ_API_KEY` configured in `.env`) with a strict grounding prompt ensuring answers quote exact units and dish names directly from retrieved context. In offline mode, the system seamlessly falls back to high-precision local deterministic synthesis.
 
 ---
 
@@ -131,7 +132,8 @@ An enterprise-grade, strictly-grounded Retrieval-Augmented Generation (RAG) syst
 #### **Question 1**
 > **Question:** What exact quantities, in grams, of dark couverture chocolate and heavy cream are required for a standard 20-portion batch of Signature Truffle Ganache?
 > 
-> **Answer:** For a standard 20-portion batch of Signature Truffle Ganache, the required quantities are 850 grams of Dark Couverture Chocolate (70% Valrhona Guanaja) and 620 grams of Heavy Whipping Cream (36% milkfat).
+> **Answer:** Dark Couverture Chocolate (70% Valrhona Guanaja): 850 grams  
+> Heavy Whipping Cream (36% milkfat): 620 grams
 > 
 > **Sources:** `["Page 10"]`
 
@@ -140,7 +142,8 @@ An enterprise-grade, strictly-grounded Retrieval-Augmented Generation (RAG) syst
 #### **Question 2**
 > **Question:** According to the Allergen Matrix, which dishes on the Autumn Tasting Menu contain tree nuts or sesame?
 > 
-> **Answer:** According to the Autumn Tasting Menu Allergen Matrix: Dishes containing tree nuts: (1) Roasted Fig & Hazelnut Duck Terrine, and (2) Pistachio Crusted Lamb Rack; Dishes containing sesame: (1) Charred Eggplant & Tahini Veloute.
+> **Answer:** Tree nuts: Roasted Fig & Hazelnut Duck Terrine; Pistachio Crusted Lamb Rack.  
+> Sesame: Charred Eggplant & Tahini Veloute.
 > 
 > **Sources:** `["Page 25"]`
 
@@ -158,7 +161,7 @@ An enterprise-grade, strictly-grounded Retrieval-Augmented Generation (RAG) syst
 #### **Question 4**
 > **Question:** What is the mandatory minimum internal cooking temperature, in degrees Celsius, and the required holding time for sous-vide duck breast, as specified in the Food Safety section?
 > 
-> **Answer:** The mandatory minimum internal cooking temperature for sous-vide duck breast is 57.5 degrees Celsius (57.5 C), and the required holding time is 110 minutes (to achieve full log-7 Salmonella pasteurization).
+> **Answer:** The mandatory minimum internal cooking temperature is **57.5 degrees Celsius**, and the required holding time is **110 minutes**.
 > 
 > **Sources:** `["Page 40"]`
 
@@ -177,17 +180,17 @@ An enterprise-grade, strictly-grounded Retrieval-Augmented Generation (RAG) syst
 
 | Question ID | Question Summary | Expected Answer | Actual Generated Answer | Source | Status |
 |:---|:---|:---|:---|:---:|:---:|
-| **Q1** | Quantities of chocolate & heavy cream for Truffle Ganache | 850 grams dark couverture chocolate, 620 grams heavy cream | 850 grams Dark Couverture Chocolate (70% Valrhona Guanaja), 620 grams Heavy Whipping Cream (36% milkfat) | `Page 10` | **MATCH** |
-| **Q2** | Dishes containing tree nuts or sesame on Autumn Tasting Menu | Tree nuts: (1) Roasted Fig & Hazelnut Duck Terrine, (2) Pistachio Crusted Lamb Rack; Sesame: (1) Charred Eggplant & Tahini Veloute | Tree nuts: (1) Roasted Fig & Hazelnut Duck Terrine, and (2) Pistachio Crusted Lamb Rack; Sesame: (1) Charred Eggplant & Tahini Veloute | `Page 25` | **MATCH** |
+| **Q1** | Quantities of chocolate & heavy cream for Truffle Ganache | 850 grams dark couverture chocolate, 620 grams heavy cream | Dark Couverture Chocolate (70% Valrhona Guanaja): 850 grams<br>Heavy Whipping Cream (36% milkfat): 620 grams | `Page 10` | **MATCH** |
+| **Q2** | Dishes containing tree nuts or sesame on Autumn Tasting Menu | Tree nuts: (1) Roasted Fig & Hazelnut Duck Terrine, (2) Pistachio Crusted Lamb Rack<br>Sesame: (1) Charred Eggplant & Tahini Veloute | Tree nuts: Roasted Fig & Hazelnut Duck Terrine; Pistachio Crusted Lamb Rack.<br>Sesame: Charred Eggplant & Tahini Veloute. | `Page 25` | **MATCH** |
 | **Q3** | Eiffel Tower winter closing time | `[not found]` (external knowledge / out of corpus) | `[not found]` | `[]` | **MATCH** |
-| **Q4** | Sous-vide duck breast temperature & holding time | 57.5 °C internal core temperature, 110 minutes holding time | 57.5 degrees Celsius (57.5 C) internal core temperature, 110 minutes holding time | `Page 40` | **MATCH** |
+| **Q4** | Sous-vide duck breast temperature & holding time | 57.5 °C internal core temperature, 110 minutes holding time | 57.5 degrees Celsius internal core temperature, 110 minutes holding time | `Page 40` | **MATCH** |
 | **Q5** | Michelin-star rating of Noma in Copenhagen | `[not found]` (external knowledge / out of corpus) | `[not found]` | `[]` | **MATCH** |
 
 ---
 
 ## Execution Screenshot
 
-The project execution output demonstrating the ingestion, ChromaDB caching, assessment question processing, and unit tests is shown below:
+The project execution output demonstrating ingestion, ChromaDB caching, assessment question processing, and unit tests:
 
 ![Project Execution Output](execution_output.png)
 
@@ -206,12 +209,14 @@ Running Assessment Questions (Q1 - Q5):
 
 --------------------------------------------------------------------------------
 [Q1] QUESTION: What exact quantities, in grams, of dark couverture chocolate and heavy cream are required for a standard 20-portion batch of Signature Truffle Ganache?
-[Q1] ANSWER  : For a standard 20-portion batch of Signature Truffle Ganache, the required quantities are 850 grams of Dark Couverture Chocolate (70% Valrhona Guanaja) and 620 grams of Heavy Whipping Cream (36% milkfat).
+[Q1] ANSWER  : Dark Couverture Chocolate (70% Valrhona Guanaja): 850 grams  
+Heavy Whipping Cream (36% milkfat): 620 grams
 [Q1] SOURCES : ['Page 10']
 
 --------------------------------------------------------------------------------
 [Q2] QUESTION: According to the Allergen Matrix, which dishes on the Autumn Tasting Menu contain tree nuts or sesame?
-[Q2] ANSWER  : According to the Autumn Tasting Menu Allergen Matrix: Dishes containing tree nuts: (1) Roasted Fig & Hazelnut Duck Terrine, and (2) Pistachio Crusted Lamb Rack; Dishes containing sesame: (1) Charred Eggplant & Tahini Veloute.
+[Q2] ANSWER  : Tree nuts: Roasted Fig & Hazelnut Duck Terrine; Pistachio Crusted Lamb Rack.  
+Sesame: Charred Eggplant & Tahini Veloute.
 [Q2] SOURCES : ['Page 25']
 
 --------------------------------------------------------------------------------
@@ -221,13 +226,14 @@ Running Assessment Questions (Q1 - Q5):
 
 --------------------------------------------------------------------------------
 [Q4] QUESTION: What is the mandatory minimum internal cooking temperature, in degrees Celsius, and the required holding time for sous-vide duck breast, as specified in the Food Safety section?
-[Q4] ANSWER  : The mandatory minimum internal cooking temperature for sous-vide duck breast is 57.5 degrees Celsius (57.5 C), and the required holding time is 110 minutes (to achieve full log-7 Salmonella pasteurization).
+[Q4] ANSWER  : The mandatory minimum internal cooking temperature is **57.5 degrees Celsius**, and the required holding time is **110 minutes**.
 [Q4] SOURCES : ['Page 40']
 
 --------------------------------------------------------------------------------
 [Q5] QUESTION: What is the current Michelin-star rating of Noma in Copenhagen?
 [Q5] ANSWER  : [not found]
 [Q5] SOURCES : []
+
 ================================================================================
 ```
 
@@ -248,10 +254,10 @@ Running Assessment Questions (Q1 - Q5):
    pip install -r requirements.txt
    ```
 
-3. **(Optional) Configure Environment Variables:**
+3. **Configure Environment Variables:**
    ```bash
    cp .env.example .env
-   # Add your optional GEMINI_API_KEY or OPENAI_API_KEY if desired
+   # Add your GROQ_API_KEY into .env
    ```
 
 ### Running the Assessment
@@ -277,7 +283,7 @@ test_q4_sous_vide_duck_breast_food_safety (__main__.TestCulinaryRAG) ... ok
 test_q5_noma_michelin_rating (__main__.TestCulinaryRAG) ... ok
 
 ----------------------------------------------------------------------
-Ran 5 tests in 0.488s
+Ran 5 tests in 3.299s
 
 OK
 ```
@@ -293,7 +299,7 @@ res = answer("What exact quantities, in grams, of dark couverture chocolate and 
 print(res)
 # Output:
 # {
-#   "answer": "For a standard 20-portion batch of Signature Truffle Ganache, the required quantities are 850 grams of Dark Couverture Chocolate (70% Valrhona Guanaja) and 620 grams of Heavy Whipping Cream (36% milkfat).",
+#   "answer": "Dark Couverture Chocolate (70% Valrhona Guanaja): 850 grams\nHeavy Whipping Cream (36% milkfat): 620 grams",
 #   "sources": ["Page 10"]
 # }
 
@@ -313,6 +319,7 @@ print(unrelated)
 .
 ├── README.md                                  # Complete documentation & assessment results
 ├── requirements.txt                           # Dependencies
+├── .env                                       # Stored API keys (ignored by git)
 ├── .env.example                               # Environment template
 ├── .gitignore                                 # Git ignore file
 ├── execution_output.png                       # Terminal screenshot of execution
@@ -321,11 +328,11 @@ print(unrelated)
 ├── test_assessment.py                         # Evaluation test suite
 ├── chroma_db/                                 # Persisted local ChromaDB database
 └── rag/
-    ├── __init__.py                            # Module exports & CulinaryRAGSystem singleton
+    ├── __init__.py                            # Singleton instance & module exports
     ├── config.py                              # Configuration parameters & env loading
     ├── ingestion.py                           # PDF page extraction with pypdf
     ├── chunker.py                             # Sliding window chunking with overlap
     ├── vector_store.py                        # Persistent ChromaDB vector store
     ├── retriever.py                           # Similarity search & threshold filtering
-    └── generator.py                           # Strictly grounded answer generation
+    └── generator.py                           # Strictly grounded generator (Groq LLM + local fallback)
 ```
